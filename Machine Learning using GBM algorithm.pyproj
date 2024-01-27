@@ -12,6 +12,7 @@
     <Name>Machine Learning using GBM algorithm</Name>
     <RootNamespace>Machine Learning using GBM algorithm</RootNamespace>
     <InterpreterId>MSBuild|VirtualPython3.9|$(MSBuildProjectFullPath)</InterpreterId>
+    <TestFramework>Pytest</TestFramework>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -23,6 +24,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Machine_Learning_using_GBM_algorithm.py" />
+    <Compile Include="teste.py" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="env\">

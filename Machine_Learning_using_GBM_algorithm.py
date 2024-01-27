@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from sklearn.metrics import classification_report
-
+from sklearn.neural_network import MLPClassifier
 
 
 
@@ -168,7 +168,7 @@ X = df.drop('target', axis=1)
 y = df['target']
 
 # Dividir os dados em conjuntos de treinamento e teste
-X_treino, X_teste, y_treino, y_teste = train_test_split(X, y, test_size=0.2, random_state=42)
+X_treino, X_teste, y_treino, y_teste = train_test_split(X, y, test_size=0.3, random_state=42)
 
 # Inicializar o modelo
 modelo_gbm = GradientBoostingClassifier()
@@ -196,8 +196,8 @@ plt.show()
 
 # Definir os parâmetros que deseja ajustar
 parametros = {
-    'n_estimators': [100, 200, 300],
-    'learning_rate': [0.00001, 0.1, 0.2],
+    'n_estimators': [20, 30, 50],
+    'learning_rate': [0.1, 0.2, 0.3],
     'max_depth': [3, 4, 5]
 }
 
@@ -229,7 +229,7 @@ X = df.drop('target', axis=1)
 y = df['target']
 
 # Dividir os dados em conjuntos de treino e teste
-X_treino, X_teste, y_treino, y_teste = train_test_split(X, y, test_size=0.2, random_state=42)
+X_treino, X_teste, y_treino, y_teste = train_test_split(X, y, test_size=0.3, random_state=42)
 
 # Criar e treinar o modelo GBM
 modelo_gbm = GradientBoostingClassifier()
@@ -349,4 +349,106 @@ plt.xlabel('Número de Interações')
 plt.ylabel('Acurácia')
 plt.title('Curva de Aprendizado do Gradient Boosting Classifier')
 plt.legend()
+plt.show()
+
+
+##########################################################################
+############ TREINANDO O MODELO GBM COM RUIDO GAUSSIANO ##################
+##########################################################################
+
+
+# Função para adicionar ruído gaussiano a features aleatórias
+def adicionar_ruido_gaussiano(df, features, desvio_padrao=0.1):
+    df_ruidoso = df.copy()
+    for feature in features:
+        df_ruidoso[feature] += np.random.normal(0, desvio_padrao, df.shape[0])
+    return df_ruidoso
+
+# Selecionar 5 features aleatórias para adicionar ruído
+features_com_ruido = np.random.choice(df.columns[:-1], 5, replace=False)
+
+# Adicionar ruído gaussiano às features selecionadas
+df_ruidoso = adicionar_ruido_gaussiano(df, features_com_ruido)
+
+##########################################################################
+####################### SEGUNDO TREINAMENTO - GBM ########################
+##########################################################################
+
+# Substitua 'target' pelo nome real da coluna que contém seus rótulos
+X_ruidoso = df_ruidoso.drop('target', axis=1)
+y_ruidoso = df_ruidoso['target']
+
+# Dividir os dados ruidosos em conjuntos de treinamento e teste
+X_treino_ruidoso, X_teste_ruidoso, y_treino_ruidoso, y_teste_ruidoso = train_test_split(X_ruidoso, y_ruidoso, test_size=0.2, random_state=42)
+
+# Inicializar o modelo GBM para o segundo treinamento
+modelo_gbm_ruidoso = GradientBoostingClassifier()
+
+# Treinar o modelo com os dados ruidosos
+modelo_gbm_ruidoso.fit(X_treino_ruidoso, y_treino_ruidoso)
+
+# Fazer previsões nos dados de teste ruidosos
+previsoes_ruidosas = modelo_gbm_ruidoso.predict(X_teste_ruidoso)
+
+# Calcular métricas para o segundo treinamento
+report_ruidoso = classification_report(y_teste_ruidoso, previsoes_ruidosas)
+print("Métricas para o segundo treinamento:")
+print(report_ruidoso)
+
+# Gerar matriz de confusão para o segundo treinamento
+matriz_confusao_ruidoso = confusion_matrix(y_teste_ruidoso, previsoes_ruidosas)
+
+# Visualizar a matriz de confusão com seaborn
+plt.figure(figsize=(8, 6))
+sns.heatmap(matriz_confusao_ruidoso, annot=True, fmt="d", cmap="Blues", xticklabels=['Não Fraude', 'Fraude'], yticklabels=['Não Fraude', 'Fraude'])
+plt.xlabel('Previsto')
+plt.ylabel('Real')
+plt.title('Matriz de Confusão - Segundo Treinamento')
+plt.show()
+
+# Comparar as importâncias das características entre o treinamento original e o treinamento com ruído
+importancias_ruidoso = modelo_gbm_ruidoso.feature_importances_
+df_importancias_ruidoso = pd.DataFrame({'Feature': X_ruidoso.columns, 'Importância Ruidoso': importancias_ruidoso})
+df_importancias_ruidoso = df_importancias_ruidoso.sort_values(by='Importância Ruidoso', ascending=False)
+
+# Visualizar a importância das características no treinamento com ruído
+plt.figure(figsize=(10, 7))
+sns.barplot(x='Importância Ruidoso', y='Feature', data=df_importancias_ruidoso, palette='viridis')
+plt.title('Importância das características - GBM com Ruído')
+plt.show()
+
+##########################################################################
+####################### TREINANDO O MODELO - MLP #########################
+##########################################################################
+
+# Substitua 'df' pelo seu DataFrame
+X_mlp = df.drop('target', axis=1)
+y_mlp = df['target']
+
+# Dividir os dados em conjuntos de treinamento e teste
+X_treino_mlp, X_teste_mlp, y_treino_mlp, y_teste_mlp = train_test_split(X_mlp, y_mlp, test_size=0.2, random_state=42)
+
+# Inicializar o modelo MLP
+modelo_mlp = MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=42)
+
+# Treinar o modelo MLP
+modelo_mlp.fit(X_treino_mlp, y_treino_mlp)
+
+# Fazer previsões com o modelo MLP
+previsoes_mlp = modelo_mlp.predict(X_teste_mlp)
+
+# Calcular métricas para o modelo MLP
+report_mlp = classification_report(y_teste_mlp, previsoes_mlp)
+print("Métricas para o modelo MLP:")
+print(report_mlp)
+
+# Gerar matriz de confusão para o modelo MLP
+matriz_confusao_mlp = confusion_matrix(y_teste_mlp, previsoes_mlp)
+
+# Visualizar a matriz de confusão com seaborn
+plt.figure(figsize=(8, 6))
+sns.heatmap(matriz_confusao_mlp, annot=True, fmt="d", cmap="Blues", xticklabels=['Não Fraude', 'Fraude'], yticklabels=['Não Fraude', 'Fraude'])
+plt.xlabel('Previsto')
+plt.ylabel('Real')
+plt.title('Matriz de Confusão - Modelo MLP')
 plt.show()
